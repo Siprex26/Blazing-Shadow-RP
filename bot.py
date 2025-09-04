@@ -13,8 +13,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ----- LISTAS DE ROLES -----
 aldeas_list = [
-    "⛈𝕃𝕃𝕌𝕍𝕀𝔸🌧", "🌿ℍ𝕀𝔼ℝ𝔹𝔸🌿", "🌫ℕ𝕀𝔼𝔹𝕃𝔸🌫",
-    "🌳𝕂𝕆ℕ𝕆ℍ𝔸🍃", "☁ℕ𝕌𝔹𝔼☁", "🎶𝕊𝕆ℕ𝕀𝔻𝕆🎶",
+    "⛈𝕃𝕃𝕌𝕍𝕀𝔸🌧", "🌿ℍ𝕀𝔼ℝ𝔹𝔸🌿", "🌫ℕ𝕀𝔼ℬ𝕃𝔸🌫",
+    "🌳𝕂𝕆ℕ𝕆ℍ𝔸🍃", "☁ℕ𝕌𝔹𝔼☁", "🎶𝕊𝕆ℕ𝕀𝕆🎶",
     "⌛𝔸ℝ𝔼ℕ𝔸⏳", "🗻ℝ𝕆ℂ𝔸🗻"
 ]
 
@@ -35,11 +35,11 @@ clanes_limites = {
 
 # ----- INACTIVIDAD -----
 ultimo_mensaje = actividad.ultimo_mensaje  # Cargar datos iniciales desde archivo
-ROL_INACTIVO = "inactivo"
+ROL_INACTIVO = "Inactivo"
 DIAS_INACTIVO = 3
 ARCHIVO_ACTIVIDAD = "actividad.py"
 
-# ----- FUNCIONES PARA GUARDAR ACTIVIDAD EN PYTHON PURA -----
+# ----- FUNCIONES PARA GUARDAR ACTIVIDAD -----
 def guardar_actividad():
     with open(ARCHIVO_ACTIVIDAD, "w") as f:
         f.write("from datetime import datetime\n\n")
@@ -53,11 +53,10 @@ def guardar_actividad():
 async def on_ready():
     print(f"✅ Bot conectado como {bot.user}")
     guild = bot.guilds[0]
-    # Inicializar actividad de miembros que no tengan registro
     for miembro in guild.members:
         if not miembro.bot and miembro.id not in ultimo_mensaje:
             ultimo_mensaje[miembro.id] = datetime.utcnow()
-    revisar_inactividad.start()  # Inicia la tarea de inactividad
+    revisar_inactividad.start()
 
 # ----- GUARDAR ACTIVIDAD AL ENVIAR MENSAJE -----
 @bot.event
@@ -82,7 +81,6 @@ async def revisar_inactividad():
         if miembro.bot:
             continue
 
-        # Si nunca registramos actividad, asumimos que acaba de enviar mensaje (activo)
         ultima = ultimo_mensaje.get(miembro.id)
         if not ultima:
             ultimo_mensaje[miembro.id] = datetime.utcnow()
@@ -104,7 +102,7 @@ async def revisar_inactividad():
                 await miembro.remove_roles(rol_inactivo)
 
 # ----- COMANDO PARA VER INACTIVOS -----
-@bot.command()
+@bot.command(help="Muestra los miembros inactivos en el servidor")
 async def inactivos(ctx):
     guild = ctx.guild
     rol_inactivo = discord.utils.get(guild.roles, name=ROL_INACTIVO)
@@ -119,7 +117,7 @@ async def inactivos(ctx):
         await ctx.send("✅ No hay miembros inactivos actualmente.")
 
 # ----- COMANDO ALDEAS -----
-@bot.command()
+@bot.command(help="Muestra todas las aldeas y cuántos miembros tienen")
 async def aldeas(ctx):
     mensaje = "**📜 Aldeas:**\n"
     for nombre in aldeas_list:
@@ -132,7 +130,7 @@ async def aldeas(ctx):
     await ctx.send(mensaje)
 
 # ----- COMANDO CLANES -----
-@bot.command()
+@bot.command(help="Muestra todos los clanes y su estado de ocupación")
 async def clanes(ctx):
     mensaje = "**👥 Clanes:**\n"
     for nombre, limite in clanes_limites.items():
@@ -145,9 +143,14 @@ async def clanes(ctx):
             mensaje += f"{nombre}: ❌ Rol no encontrado\n"
     await ctx.send(mensaje)
 
+# ----- COMANDO CMDS -----
+@bot.command(help="Muestra todos los comandos disponibles")
+async def cmds(ctx):
+    mensaje = "**📜 Comandos disponibles:**\n"
+    for comando in bot.commands:
+        descripcion = comando.help if comando.help else "Sin descripción"
+        mensaje += f"- !{comando.name}: {descripcion}\n"
+    await ctx.send(mensaje)
+
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
-
-
-
-
