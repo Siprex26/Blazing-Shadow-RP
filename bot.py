@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands, tasks
-import os
 from datetime import datetime, timedelta
+import os
 import actividad
 import lives
 
@@ -34,7 +34,7 @@ clanes_limites = {
 
 # ----- INACTIVIDAD -----
 ultimo_mensaje = actividad.ultimo_mensaje
-ROL_INACTIVO = "inactivo"
+ROL_INACTIVO = "inactivo"  # i minúscula
 DIAS_INACTIVO = 3
 ARCHIVO_ACTIVIDAD = "actividad.py"
 
@@ -123,7 +123,7 @@ async def inactivos(ctx):
     else:
         await ctx.send("✅ No hay miembros inactivos actualmente.")
 
-@bot.command(help="Muestra todas las aldeas y cuántos miembros tienen")
+@bot.command(name="aldeas", help="Muestra todas las aldeas y cuántos miembros tienen")
 async def aldeas_cmd(ctx):
     mensaje = "**📜 Aldeas:**\n"
     for nombre_rol in aldeas:
@@ -157,7 +157,7 @@ async def cmds(ctx):
     await ctx.send(mensaje)
 
 # ----- COMANDOS DE LIVES -----
-@bot.command(help="Crea un live. Solo admins")
+@bot.command(name="create-live", help="Crea un live. Solo admins")
 @commands.has_permissions(administrator=True)
 async def create_live(ctx, *, info: str):
     try:
@@ -185,50 +185,8 @@ async def create_live(ctx, *, info: str):
     guardar_lives()
     await ctx.send(f"✅ Live `{nombre}` creado para el {fecha_str} ({confirmado})")
 
-@bot.command(help="Marca un live como en vivo. Solo admins")
+@bot.command(name="start-live", help="Marca un live como en vivo. Solo admins")
 @commands.has_permissions(administrator=True)
 async def start_live(ctx, *, info: str):
     try:
-        partes = {k.strip().lower(): v.strip() for k, v in (item.split(":",1) for item in info.split(" ") if ":" in item)}
-        nombre = partes.get("nombre")
-    except:
-        await ctx.send("❌ Formato incorrecto. Usa: nombre: <nombre>")
-        return
-
-    for live in lives.lives:
-        if live["nombre"].lower() == nombre.lower():
-            live["estado"] = "en vivo"
-            guardar_lives()
-            await ctx.send(f"✅ Live `{nombre}` ahora está **en vivo**")
-            return
-
-    await ctx.send("❌ No se encontró un live con ese nombre.")
-
-@bot.command(help="Muestra los lives en vivo y próximos")
-async def lives_cmd(ctx):
-    ahora = datetime.now()
-    embed = discord.Embed(title="📺 Lives", color=0x1abc9c)
-
-    # Lives en vivo
-    en_vivo = [l for l in lives.lives if l["estado"] == "en vivo"]
-    if en_vivo:
-        texto_vivo = ""
-        for l in en_vivo:
-            texto_vivo += f"🔥 **{l['nombre']}** - Confirmado: {l['confirmado']}\n"
-        embed.add_field(name="En Vivo", value=texto_vivo, inline=False)
-
-    # Próximos lives desde mañana
-    proximos = [l for l in lives.lives if l["estado"] != "en vivo" and l["fecha"] >= (ahora + timedelta(days=1))]
-    if proximos:
-        texto_prox = ""
-        for l in sorted(proximos, key=lambda x: x["fecha"]):
-            texto_prox += f"⏳ {l['nombre']} - {l['fecha'].strftime('%d/%m/%y')} - Confirmado: {l['confirmado']}\n"
-        embed.add_field(name="Próximos Lives", value=texto_prox, inline=False)
-
-    if not en_vivo and not proximos:
-        embed.description = "No hay lives programados."
-
-    await ctx.send(embed=embed)
-
-# ----- INICIAR BOT -----
-bot.run(os.getenv("DISCORD_TOKEN"))
+        partes = {k.strip().lower(): v.strip() for k, v in (item.split
