@@ -35,7 +35,7 @@ clanes_limites = {
 
 # ----- INACTIVIDAD -----
 ultimo_mensaje = actividad.ultimo_mensaje  # Cargar datos iniciales desde archivo
-ROL_INACTIVO = "Inactivo"
+ROL_INACTIVO = "inactivo"
 DIAS_INACTIVO = 3
 ARCHIVO_ACTIVIDAD = "actividad.py"
 
@@ -147,3 +147,4 @@ async def clanes(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
