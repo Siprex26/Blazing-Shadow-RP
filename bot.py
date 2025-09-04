@@ -59,7 +59,7 @@ def guardar_lives(lives):
     with open(LIVES_FILE, "w") as f:
         json.dump(lives, f, indent=4)
 
-lives = cargar_lives()
+lives_list = cargar_lives()
 
 # ----- EVENTOS -----
 @bot.event
@@ -228,4 +228,5 @@ async def lives(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
