@@ -34,7 +34,7 @@ clanes_limites = {
 
 # ----- INACTIVIDAD -----
 ultimo_mensaje = {}
-ROL_INACTIVO = "Inactivo"
+ROL_INACTIVO = "inactivo"
 DIAS_INACTIVO = 3
 
 # ----- EVENTO DE INICIO -----
@@ -101,3 +101,4 @@ async def clanes(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
