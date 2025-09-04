@@ -122,7 +122,7 @@ async def inactivos(ctx):
 @bot.command()
 async def aldeas(ctx):
     mensaje = "**📜 Aldeas:**\n"
-    for nombre in aldeas:
+    for nombre in aldeas_list:
         role = discord.utils.get(ctx.guild.roles, name=nombre)
         if role:
             count = len(role.members)
@@ -147,6 +147,7 @@ async def clanes(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
