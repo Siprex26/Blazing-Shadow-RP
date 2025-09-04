@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime, timedelta
 import os
+from datetime import datetime, timedelta
 import actividad
-import lives
+import json
 
 # ----- CONFIGURACIÓN DE INTENTS -----
 intents = discord.Intents.default()
@@ -34,11 +34,10 @@ clanes_limites = {
 
 # ----- INACTIVIDAD -----
 ultimo_mensaje = actividad.ultimo_mensaje
-ROL_INACTIVO = "inactivo"  # i minúscula
+ROL_INACTIVO = "inactivo"
 DIAS_INACTIVO = 3
 ARCHIVO_ACTIVIDAD = "actividad.py"
 
-# ----- FUNCIONES PARA GUARDAR -----
 def guardar_actividad():
     with open(ARCHIVO_ACTIVIDAD, "w") as f:
         f.write("from datetime import datetime\n\n")
@@ -47,15 +46,22 @@ def guardar_actividad():
             f.write(f"    {k}: datetime({v.year}, {v.month}, {v.day}, {v.hour}, {v.minute}, {v.second}),\n")
         f.write("}\n")
 
-def guardar_lives():
-    with open("lives.py", "w") as f:
-        f.write("from datetime import datetime\n\n")
-        f.write("lives = [\n")
-        for l in lives.lives:
-            f.write(f"    {{'nombre': '{l['nombre']}', 'fecha': datetime({l['fecha'].year}, {l['fecha'].month}, {l['fecha'].day}), 'confirmado': '{l['confirmado']}', 'estado': '{l['estado']}' }},\n")
-        f.write("]\n")
+# ----- LIVES -----
+LIVES_FILE = "lives.json"
 
-# ----- EVENTO DE INICIO -----
+def cargar_lives():
+    if os.path.exists(LIVES_FILE):
+        with open(LIVES_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def guardar_lives(lives):
+    with open(LIVES_FILE, "w") as f:
+        json.dump(lives, f, indent=4)
+
+lives = cargar_lives()
+
+# ----- EVENTOS -----
 @bot.event
 async def on_ready():
     print(f"✅ Bot conectado como {bot.user}")
@@ -65,7 +71,6 @@ async def on_ready():
             ultimo_mensaje[miembro.id] = datetime.utcnow()
     revisar_inactividad.start()
 
-# ----- GUARDAR ACTIVIDAD AL ENVIAR MENSAJE -----
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -87,21 +92,16 @@ async def revisar_inactividad():
     for miembro in guild.members:
         if miembro.bot:
             continue
-
         ultima = ultimo_mensaje.get(miembro.id)
         if not ultima:
             ultimo_mensaje[miembro.id] = datetime.utcnow()
             guardar_actividad()
             ultima = ultimo_mensaje[miembro.id]
-
         if ahora - ultima > timedelta(days=DIAS_INACTIVO):
             if rol_inactivo not in miembro.roles:
                 await miembro.add_roles(rol_inactivo)
                 try:
-                    await miembro.send(
-                        f"⚠️ Hola {miembro.name}, has sido marcado como inactivo. "
-                        "Envía un mensaje en el servidor para quitar el rol y seguir participando."
-                    )
+                    await miembro.send(f"⚠️ Hola {miembro.name}, has sido marcado como inactivo. Envía un mensaje para quitar el rol.")
                 except:
                     print(f"No se pudo enviar mensaje a {miembro.name}")
         else:
@@ -109,33 +109,32 @@ async def revisar_inactividad():
                 await miembro.remove_roles(rol_inactivo)
 
 # ----- COMANDOS -----
-@bot.command(help="Muestra los miembros inactivos en el servidor")
+@bot.command()
 async def inactivos(ctx):
     guild = ctx.guild
     rol_inactivo = discord.utils.get(guild.roles, name=ROL_INACTIVO)
     if not rol_inactivo:
         await ctx.send(f"⚠️ No se encontró el rol {ROL_INACTIVO}")
         return
-
     miembros_inactivos = [m.mention for m in rol_inactivo.members]
     if miembros_inactivos:
         await ctx.send("📋 Miembros inactivos:\n" + "\n".join(miembros_inactivos))
     else:
         await ctx.send("✅ No hay miembros inactivos actualmente.")
 
-@bot.command(name="aldeas", help="Muestra todas las aldeas y cuántos miembros tienen")
-async def aldeas_cmd(ctx):
+@bot.command()
+async def aldeas(ctx):
     mensaje = "**📜 Aldeas:**\n"
-    for nombre_rol in aldeas:
-        role = discord.utils.get(ctx.guild.roles, name=nombre_rol)
+    for nombre in aldeas:
+        role = discord.utils.get(ctx.guild.roles, name=nombre)
         if role:
             count = len(role.members)
-            mensaje += f"{nombre_rol}: {count}/{LIMITE_ALDEAS}\n"
+            mensaje += f"{nombre}: {count}/{LIMITE_ALDEAS}\n"
         else:
-            mensaje += f"{nombre_rol}: ❌ Rol no encontrado\n"
+            mensaje += f"{nombre}: ❌ Rol no encontrado\n"
     await ctx.send(mensaje)
 
-@bot.command(help="Muestra todos los clanes y su estado de ocupación")
+@bot.command()
 async def clanes(ctx):
     mensaje = "**👥 Clanes:**\n"
     for nombre, limite in clanes_limites.items():
@@ -148,51 +147,84 @@ async def clanes(ctx):
             mensaje += f"{nombre}: ❌ Rol no encontrado\n"
     await ctx.send(mensaje)
 
-@bot.command(help="Muestra todos los comandos disponibles")
+@bot.command()
 async def cmds(ctx):
-    mensaje = "**📜 Comandos disponibles:**\n"
-    for comando in bot.commands:
-        descripcion = comando.help if comando.help else "Sin descripción"
-        mensaje += f"- !{comando.name}: {descripcion}\n"
+    mensaje = "**📜 Comandos Disponibles:**\n"
+    cmds_list = [
+        "!aldeas",
+        "!clanes",
+        "!inactivos",
+        "!cmds",
+        "!create-live nombre:X fecha:dd/mm/aa confirmado:si/no/probable (Admin)",
+        "!start-live nombre:X (Admin)",
+        "!lives"
+    ]
+    mensaje += "\n".join(cmds_list)
     await ctx.send(mensaje)
 
-# ----- COMANDOS DE LIVES -----
-@bot.command(name="create-live", help="Crea un live. Solo admins")
+@bot.command()
 @commands.has_permissions(administrator=True)
 async def create_live(ctx, *, info: str):
-    # Crear un diccionario vacío
     partes = {}
-
-    # Separar cada fragmento por espacios
     for item in info.split():
         if ":" in item:
-            k, v = item.split(":", 1)  # solo 1 split
+            k, v = item.split(":", 1)
             partes[k.strip().lower()] = v.strip()
-
-    # Obtener valores
     nombre = partes.get("nombre", "Sin nombre")
     fecha_str = partes.get("fecha", None)
     confirmado = partes.get("confirmado", "sin confirmar").lower()
-
-    # Validar fecha
     try:
         fecha = datetime.strptime(fecha_str, "%d/%m/%y")
     except:
         await ctx.send("❌ Fecha inválida. Usa formato dd/mm/aa")
         return
-
-    # Agregar live
-    lives.lives.append({
+    lives.append({
         "nombre": nombre,
-        "fecha": fecha,
+        "fecha": fecha.strftime("%d/%m/%y"),
         "confirmado": confirmado,
         "estado": "pendiente"
     })
-    guardar_lives()
-    await ctx.send(f"✅ Live `{nombre}` creado para el {fecha_str} ({confirmado})")
+    guardar_lives(lives)
+    await ctx.send(f"✅ Live `{nombre}` creado para {fecha_str} ({confirmado})")
 
-@bot.command(name="start-live", help="Marca un live como en vivo. Solo admins")
+@bot.command()
 @commands.has_permissions(administrator=True)
-async def start_live(ctx, *, info: str):
-    try:
-        partes = {k.strip().lower(): v.strip() for k, v in (item.split
+async def start_live(ctx, *, nombre: str):
+    live = None
+    for l in lives:
+        if l["nombre"].lower() == nombre.lower():
+            live = l
+            break
+    if not live:
+        await ctx.send(f"❌ No se encontró el live `{nombre}`")
+        return
+    live["estado"] = "en vivo"
+    guardar_lives(lives)
+    await ctx.send(f"🔴 El live `{nombre}` ha comenzado!")
+
+@bot.command()
+async def lives(ctx):
+    ahora = datetime.now()
+    en_vivo = []
+    proximos = []
+    for l in lives:
+        fecha = datetime.strptime(l["fecha"], "%d/%m/%y")
+        if l["estado"] == "en vivo":
+            en_vivo.append(l)
+        elif fecha >= ahora:
+            proximos.append(l)
+    mensaje = "**🎥 Lives:**\n"
+    if en_vivo:
+        for l in en_vivo:
+            mensaje += f"🔴 {l['nombre']} - En vivo\n"
+    else:
+        mensaje += "🔴 Ninguno en vivo\n"
+    if proximos:
+        for l in proximos:
+            mensaje += f"📅 {l['nombre']} - {l['fecha']} ({l['confirmado']})\n"
+    else:
+        mensaje += "📅 No hay próximos lives\n"
+    await ctx.send(mensaje)
+
+# ----- INICIAR BOT -----
+bot.run(os.getenv("DISCORD_TOKEN"))
