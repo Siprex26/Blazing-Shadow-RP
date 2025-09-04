@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 import os
 from datetime import datetime, timedelta
+import actividad  # Archivo donde se guarda la actividad
 
 # ----- CONFIGURACIÓN DE INTENTS -----
 intents = discord.Intents.default()
@@ -12,7 +13,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ----- LISTAS DE ROLES -----
 aldeas = [
-    "⛈𝕃𝕃𝕌𝕍𝕀𝔸🌧", "🌿ℍ𝕀𝔼ℝ𝔹𝔸🌿", "🌫ℕ𝕀𝔼𝔹𝕃𝔸🌫",
+    "⛈𝕃𝕃𝕌𝕍𝕀𝔸🌧", "🌿ℍ𝕀𝔼ℝ𝔹𝔸🌿", "🌫ℕ𝕀𝔼ℬ𝕃𝔸🌫",
     "🌳𝕂𝕆ℕ𝕆ℍ𝔸🍃", "☁ℕ𝕌𝔹𝔼☁", "🎶𝕊𝕆ℕ𝕀𝔻𝕆🎶",
     "⌛𝔸ℝ𝔼ℕ𝔸⏳", "🗻ℝ𝕆ℂ𝔸🗻"
 ]
@@ -33,29 +34,45 @@ clanes_limites = {
 }
 
 # ----- INACTIVIDAD -----
-ultimo_mensaje = {}
-ROL_INACTIVO = "inactivo"
+ultimo_mensaje = actividad.ultimo_mensaje  # Cargar datos iniciales desde archivo
+ROL_INACTIVO = "Inactivo"
 DIAS_INACTIVO = 3
+ARCHIVO_ACTIVIDAD = "actividad.py"
+
+# ----- FUNCIONES PARA GUARDAR ACTIVIDAD EN PYTHON PURA -----
+def guardar_actividad():
+    with open(ARCHIVO_ACTIVIDAD, "w") as f:
+        f.write("from datetime import datetime\n\n")
+        f.write("ultimo_mensaje = {\n")
+        for k, v in ultimo_mensaje.items():
+            f.write(f"    {k}: datetime({v.year}, {v.month}, {v.day}, {v.hour}, {v.minute}, {v.second}),\n")
+        f.write("}\n")
 
 # ----- EVENTO DE INICIO -----
 @bot.event
 async def on_ready():
     print(f"✅ Bot conectado como {bot.user}")
+    guild = bot.guilds[0]
+    # Inicializar actividad de miembros que no tengan registro
+    for miembro in guild.members:
+        if not miembro.bot and miembro.id not in ultimo_mensaje:
+            ultimo_mensaje[miembro.id] = datetime.utcnow()
     revisar_inactividad.start()  # Inicia la tarea de inactividad
 
-# ----- GUARDAR ACTIVIDAD -----
+# ----- GUARDAR ACTIVIDAD AL ENVIAR MENSAJE -----
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
     ultimo_mensaje[message.author.id] = datetime.utcnow()
+    guardar_actividad()
     await bot.process_commands(message)
 
 # ----- TAREA DE INACTIVIDAD -----
 @tasks.loop(hours=1)
 async def revisar_inactividad():
     ahora = datetime.utcnow()
-    guild = bot.guilds[0]  # Asume un solo servidor
+    guild = bot.guilds[0]
     rol_inactivo = discord.utils.get(guild.roles, name=ROL_INACTIVO)
     if not rol_inactivo:
         print(f"⚠️ No se encontró el rol {ROL_INACTIVO}")
@@ -64,13 +81,42 @@ async def revisar_inactividad():
     for miembro in guild.members:
         if miembro.bot:
             continue
+
+        # Si nunca registramos actividad, asumimos que acaba de enviar mensaje (activo)
         ultima = ultimo_mensaje.get(miembro.id)
-        if not ultima or ahora - ultima > timedelta(days=DIAS_INACTIVO):
+        if not ultima:
+            ultimo_mensaje[miembro.id] = datetime.utcnow()
+            guardar_actividad()
+            ultima = ultimo_mensaje[miembro.id]
+
+        if ahora - ultima > timedelta(days=DIAS_INACTIVO):
             if rol_inactivo not in miembro.roles:
                 await miembro.add_roles(rol_inactivo)
+                try:
+                    await miembro.send(
+                        f"⚠️ Hola {miembro.name}, has sido marcado como inactivo. "
+                        "Envía un mensaje en el servidor para quitar el rol y seguir participando."
+                    )
+                except:
+                    print(f"No se pudo enviar mensaje a {miembro.name}")
         else:
             if rol_inactivo in miembro.roles:
                 await miembro.remove_roles(rol_inactivo)
+
+# ----- COMANDO PARA VER INACTIVOS -----
+@bot.command()
+async def inactivos(ctx):
+    guild = ctx.guild
+    rol_inactivo = discord.utils.get(guild.roles, name=ROL_INACTIVO)
+    if not rol_inactivo:
+        await ctx.send(f"⚠️ No se encontró el rol {ROL_INACTIVO}")
+        return
+
+    miembros_inactivos = [m.mention for m in rol_inactivo.members]
+    if miembros_inactivos:
+        await ctx.send("📋 Miembros inactivos:\n" + "\n".join(miembros_inactivos))
+    else:
+        await ctx.send("✅ No hay miembros inactivos actualmente.")
 
 # ----- COMANDO ALDEAS -----
 @bot.command()
@@ -101,4 +147,3 @@ async def clanes(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
-
