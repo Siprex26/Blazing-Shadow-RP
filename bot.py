@@ -161,8 +161,9 @@ async def cmds(ctx):
 @commands.has_permissions(administrator=True)
 async def create_live(ctx, *, info: str):
     try:
-        partes = {k.strip().lower(): v.strip() for k, v in (item.split(":",1) for item in info.split(" ") if ":" in item)}
-    except:
+        # Separar cada parte por espacios que contengan ":"
+        partes = {k.strip().lower(): v.strip() for item in info.split() if ":" in item for k, v in [item.split(":", 1)]}
+    except Exception as e:
         await ctx.send("❌ Formato incorrecto. Usa: nombre: <nombre> Fecha: <dd/mm/aa> Confirmado: <si/no/probable>")
         return
 
