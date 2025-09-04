@@ -160,23 +160,28 @@ async def cmds(ctx):
 @bot.command(name="create-live", help="Crea un live. Solo admins")
 @commands.has_permissions(administrator=True)
 async def create_live(ctx, *, info: str):
-    try:
-        # Separar cada parte por espacios que contengan ":"
-        partes = {k.strip().lower(): v.strip() for item in info.split() if ":" in item for k, v in [item.split(":", 1)]}
-    except Exception as e:
-        await ctx.send("❌ Formato incorrecto. Usa: nombre: <nombre> Fecha: <dd/mm/aa> Confirmado: <si/no/probable>")
-        return
+    # Crear un diccionario vacío
+    partes = {}
 
+    # Separar cada fragmento por espacios
+    for item in info.split():
+        if ":" in item:
+            k, v = item.split(":", 1)  # solo 1 split
+            partes[k.strip().lower()] = v.strip()
+
+    # Obtener valores
     nombre = partes.get("nombre", "Sin nombre")
     fecha_str = partes.get("fecha", None)
     confirmado = partes.get("confirmado", "sin confirmar").lower()
 
+    # Validar fecha
     try:
         fecha = datetime.strptime(fecha_str, "%d/%m/%y")
     except:
         await ctx.send("❌ Fecha inválida. Usa formato dd/mm/aa")
         return
 
+    # Agregar live
     lives.lives.append({
         "nombre": nombre,
         "fecha": fecha,
