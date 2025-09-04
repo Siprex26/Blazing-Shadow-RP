@@ -1,6 +1,7 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import os
+from datetime import datetime, timedelta
 
 # ----- CONFIGURACIÓN DE INTENTS -----
 intents = discord.Intents.default()
@@ -31,10 +32,45 @@ clanes_limites = {
     "Namikaze┃🎇": 4
 }
 
+# ----- INACTIVIDAD -----
+ultimo_mensaje = {}
+ROL_INACTIVO = "Inactivo"
+DIAS_INACTIVO = 3
+
 # ----- EVENTO DE INICIO -----
 @bot.event
 async def on_ready():
     print(f"✅ Bot conectado como {bot.user}")
+    revisar_inactividad.start()  # Inicia la tarea de inactividad
+
+# ----- GUARDAR ACTIVIDAD -----
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+    ultimo_mensaje[message.author.id] = datetime.utcnow()
+    await bot.process_commands(message)
+
+# ----- TAREA DE INACTIVIDAD -----
+@tasks.loop(hours=1)
+async def revisar_inactividad():
+    ahora = datetime.utcnow()
+    guild = bot.guilds[0]  # Asume un solo servidor
+    rol_inactivo = discord.utils.get(guild.roles, name=ROL_INACTIVO)
+    if not rol_inactivo:
+        print(f"⚠️ No se encontró el rol {ROL_INACTIVO}")
+        return
+
+    for miembro in guild.members:
+        if miembro.bot:
+            continue
+        ultima = ultimo_mensaje.get(miembro.id)
+        if not ultima or ahora - ultima > timedelta(days=DIAS_INACTIVO):
+            if rol_inactivo not in miembro.roles:
+                await miembro.add_roles(rol_inactivo)
+        else:
+            if rol_inactivo in miembro.roles:
+                await miembro.remove_roles(rol_inactivo)
 
 # ----- COMANDO ALDEAS -----
 @bot.command()
