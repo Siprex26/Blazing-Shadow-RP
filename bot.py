@@ -29,10 +29,10 @@ clanes_limites = {
     "INUZUKA ┃🐩": 4,
     "Uzumaki ┃🎴": 3,
     "Lee┃🦶": 3,
-    "Namikaze┃🎇": 4
-    "Akimichi": 5
-    "Sarutobi": 4
-    "Hatake": 4
+    "Namikaze┃🎇": 4,
+    "Akimichi": 5,
+    "Sarutobi": 4,
+    "Hatake": 4,
 }
 
 # ----- INACTIVIDAD -----
@@ -231,6 +231,7 @@ async def lives(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
