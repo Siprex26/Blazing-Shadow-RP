@@ -229,8 +229,99 @@ async def lives(ctx):
         mensaje += "📅 No hay próximos lives\n"
     await ctx.send(mensaje)
 
+
+
+
+@bot.command()
+async def plantilla(ctx):
+    user = ctx.author
+    canal_destino_id = 1415360688599203870 # 🔹 Cambia por el ID real de #fichas-oc
+
+    def check(m):
+        return m.author == user and m.channel == ctx.channel
+
+    try:
+        # Preguntas paso a paso
+        preguntas = [
+            ("✍️ **Nombre del OC?**", "nombre"),
+            ("🌀 **Clan del OC?**", "clan"),
+            ("🏙️ **Aldea del OC?**", "aldea"),
+            ("🌪️ **Elemento(s) del OC?**", "elementos"),
+            ("🎯 **Aspiración del OC?**", "aspiracion"),
+            ("👤 **Tu nombre en Roblox?**", "roblox"),
+            ("📅 **Fecha de creación del OC?**", "fecha"),
+        ]
+
+        respuestas = {}
+
+        for pregunta, key in preguntas:
+            embed = discord.Embed(
+                title="📋 Plantilla de OC",
+                description=pregunta,
+                color=discord.Color.blurple()
+            )
+            await ctx.send(embed=embed)
+            msg = await bot.wait_for("message", check=check, timeout=90)
+            respuestas[key] = msg.content
+
+        # Pregunta de imagen obligatoria
+        embed_img = discord.Embed(
+            title="📋 Plantilla de OC",
+            description="🖼️ **Manda una foto de tu OC (obligatoria)**",
+            color=discord.Color.blurple()
+        )
+        await ctx.send(embed=embed_img)
+
+        def check_img(m):
+            return (
+                m.author == user
+                and m.channel == ctx.channel
+                and (m.attachments or m.content.startswith("http"))
+            )
+
+        imagen_msg = await bot.wait_for("message", check=check_img, timeout=90)
+
+        if not imagen_msg.attachments and not imagen_msg.content.startswith("http"):
+            await ctx.send("❌ Debes mandar una imagen o un link de imagen válido. Plantilla cancelada.")
+            return
+
+        imagen_url = imagen_msg.attachments[0].url if imagen_msg.attachments else imagen_msg.content
+
+        # Canal destino
+        canal_destino = bot.get_channel(canal_destino_id)
+        if not canal_destino:
+            await ctx.send("⚠️ No encontré el canal destino, revisa el ID.")
+            return
+
+        # Texto con el formato que pediste
+        ficha_texto = (
+            "╔════════════════════════════╗\n"
+            "       🌸 FICHA DE OC - ROLEPLAY 🌸\n"
+            "╚════════════════════════════╝\n\n"
+            f"🎴 **Nombre del OC:** {respuestas['nombre']}\n\n"
+            f"👪 **Clan:** {respuestas['clan']}\n\n"
+            f"🏙️ **Aldea:** {respuestas['aldea']}\n\n"
+            f"🌪️ **Elemento(s):** {respuestas['elementos']}\n\n"
+            f"🎯 **Aspiración:** {respuestas['aspiracion']}\n\n"
+            f"👤 **Nombre en Roblox:** {respuestas['roblox']}\n\n"
+            f"📅 **Fecha de creación:** {respuestas['fecha']}\n\n"
+            f"🖼️ **Foto del OC:**\n{imagen_url}"
+        )
+
+        # Mandar ficha al canal fichas-oc
+        await canal_destino.send(f"✅ Nueva ficha enviada por {user.mention}\n\n{ficha_texto}")
+
+        # Confirmación en el canal original
+        await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
+
+    except TimeoutError:
+        await ctx.send(f"⏳ {user.mention}, tardaste demasiado en responder.")
+
+
+
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
