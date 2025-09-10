@@ -323,28 +323,31 @@ async def plantilla(ctx):
 
     # ---------- MENÚ DE ELEMENTOS ----------
     class ElementoSelect(discord.ui.Select):
-        def __init__(self):
-            opciones = [
-                discord.SelectOption(label="🔥 Fuego"),
-                discord.SelectOption(label="⚡ Electricidad"),
-                discord.SelectOption(label="🌍 Tierra"),
-                discord.SelectOption(label="💧 Agua"),
-                discord.SelectOption(label="🌪️ Aire"),
-            ]
-            super().__init__(
-                placeholder="🌪️ Selecciona los elementos de tu OC",
-                min_values=1,
-                max_values=5,
-                options=opciones
-            )
+    def __init__(self):
+        opciones = [
+            discord.SelectOption(label="🔥 Fuego"),
+            discord.SelectOption(label="⚡ Electricidad"),
+            discord.SelectOption(label="🌍 Tierra"),
+            discord.SelectOption(label="💧 Agua"),
+            discord.SelectOption(label="🌪️ Aire"),
+        ]
+        super().__init__(
+            placeholder="🌪️ Selecciona **2 elementos** de tu OC",
+            min_values=2,
+            max_values=2,  # ✅ ahora solo pueden elegir 2
+            options=opciones
+        )
 
-        async def callback(self, interaction: discord.Interaction):
-            if interaction.user != user:
-                await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
-                return
-            respuestas["elementos"] = ", ".join(self.values)
-            await interaction.response.send_message(f"✅ Elementos seleccionados: **{respuestas['elementos']}**", ephemeral=True)
-            self.view.stop()
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user != user:
+            await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+            return
+        respuestas["elementos"] = ", ".join(self.values)
+        await interaction.response.send_message(
+            f"✅ Elementos seleccionados: **{respuestas['elementos']}**",
+            ephemeral=True
+        )
+        self.view.stop()
 
     class ElementoView(discord.ui.View):
         def __init__(self):
@@ -420,6 +423,7 @@ async def plantilla(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
