@@ -321,8 +321,8 @@ async def plantilla(ctx):
         await ctx.send("❌ Debes seleccionar una aldea. Plantilla cancelada.")
         return
 
-    # ---------- MENÚ DE ELEMENTOS ----------
-    class ElementoSelect(discord.ui.Select):
+  # ---------- MENÚ DE ELEMENTOS ----------
+class ElementoSelect(discord.ui.Select):
     def __init__(self):
         opciones = [
             discord.SelectOption(label="🔥 Fuego"),
@@ -334,13 +334,16 @@ async def plantilla(ctx):
         super().__init__(
             placeholder="🌪️ Selecciona **2 elementos** de tu OC",
             min_values=2,
-            max_values=2,  # ✅ ahora solo pueden elegir 2
+            max_values=2,  # ✅ Solo 2 permitidos
             options=opciones
         )
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.user != user:
-            await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ No puedes responder esta plantilla.",
+                ephemeral=True
+            )
             return
         respuestas["elementos"] = ", ".join(self.values)
         await interaction.response.send_message(
@@ -349,17 +352,20 @@ async def plantilla(ctx):
         )
         self.view.stop()
 
-    class ElementoView(discord.ui.View):
-        def __init__(self):
-            super().__init__(timeout=90)
-            self.add_item(ElementoSelect())
 
-    view_elemento = ElementoView()
-    await ctx.send("🌪️ **Selecciona los elementos de tu OC**", view=view_elemento)
-    await view_elemento.wait()
-    if "elementos" not in respuestas:
-        await ctx.send("❌ Debes seleccionar al menos un elemento. Plantilla cancelada.")
-        return
+class ElementoView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=90)
+        self.add_item(ElementoSelect())
+
+
+view_elemento = ElementoView()
+await ctx.send("🌪️ **Selecciona los elementos de tu OC**", view=view_elemento)
+await view_elemento.wait()
+if "elementos" not in respuestas:
+    await ctx.send("❌ Debes seleccionar al menos un elemento. Plantilla cancelada.")
+    return
+
 
     # ---------- PREGUNTAS DE TEXTO ----------
     preguntas_texto = [
@@ -423,6 +429,7 @@ async def plantilla(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
