@@ -322,50 +322,49 @@ async def plantilla(ctx):
         return
 
   # ---------- MENÚ DE ELEMENTOS ----------
-class ElementoSelect(discord.ui.Select):
-    def __init__(self):
-        opciones = [
-            discord.SelectOption(label="🔥 Fuego"),
-            discord.SelectOption(label="⚡ Electricidad"),
-            discord.SelectOption(label="🌍 Tierra"),
-            discord.SelectOption(label="💧 Agua"),
-            discord.SelectOption(label="🌪️ Aire"),
-        ]
-        super().__init__(
-            placeholder="🌪️ Selecciona **2 elementos** de tu OC",
-            min_values=2,
-            max_values=2,  # ✅ Solo 2 permitidos
-            options=opciones
-        )
 
-    async def callback(self, interaction: discord.Interaction):
-        if interaction.user != user:
+    class ElementoSelect(discord.ui.Select):
+        def __init__(self):
+            opciones = [
+                discord.SelectOption(label="🔥 Fuego"),
+                discord.SelectOption(label="⚡ Electricidad"),
+                discord.SelectOption(label="🌍 Tierra"),
+                discord.SelectOption(label="💧 Agua"),
+                discord.SelectOption(label="🌪️ Aire"),
+            ]
+            super().__init__(
+                placeholder="🌪️ Selecciona **2 elementos** de tu OC",
+                min_values=2,
+                max_values=2,  # ✅ Solo 2 permitidos
+                options=opciones
+            )
+
+        async def callback(self, interaction: discord.Interaction):
+            if interaction.user != user:
+                await interaction.response.send_message(
+                    "❌ No puedes responder esta plantilla.",
+                    ephemeral=True
+                )
+                return
+            respuestas["elementos"] = ", ".join(self.values)
             await interaction.response.send_message(
-                "❌ No puedes responder esta plantilla.",
+                f"✅ Elementos seleccionados: **{respuestas['elementos']}**",
                 ephemeral=True
             )
-            return
-        respuestas["elementos"] = ", ".join(self.values)
-        await interaction.response.send_message(
-            f"✅ Elementos seleccionados: **{respuestas['elementos']}**",
-            ephemeral=True
-        )
-        self.view.stop()
+            self.view.stop()
 
+    class ElementoView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=90)
+            self.add_item(ElementoSelect())
 
-class ElementoView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=90)
-        self.add_item(ElementoSelect())
-
-
-view_elemento = ElementoView()
-await ctx.send("🌪️ **Selecciona los elementos de tu OC**", view=view_elemento)
-await view_elemento.wait()
-if "elementos" not in respuestas:
-    await ctx.send("❌ Debes seleccionar al menos un elemento. Plantilla cancelada.")
-    return
-
+    # 🔹 Aquí ya está dentro de la función async
+    view_elemento = ElementoView()
+    await ctx.send("🌪️ **Selecciona los elementos de tu OC**", view=view_elemento)
+    await view_elemento.wait()
+    if "elementos" not in respuestas:
+        await ctx.send("❌ Debes seleccionar al menos un elemento. Plantilla cancelada.")
+        return
 
     # ---------- PREGUNTAS DE TEXTO ----------
     preguntas_texto = [
@@ -429,6 +428,7 @@ if "elementos" not in respuestas:
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
