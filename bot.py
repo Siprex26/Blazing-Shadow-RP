@@ -240,45 +240,42 @@ async def plantilla(ctx):
 
     # ---------- MENÚ DE CLAN ----------
     class ClanSelect(discord.ui.Select):
-    def __init__(self, guild):
-        # Solo mostrar los clanes que no estén llenos
-        opciones = []
-        for clan, limite in clanes_limites.items():
-            role = discord.utils.get(guild.roles, name=clan)
-            miembros = len(role.members) if role else 0
-            if miembros < limite:
-                opciones.append(discord.SelectOption(label=clan))
-        
-        if not opciones:
-            # Si todos los clanes están llenos
-            opciones.append(discord.SelectOption(label="❌ Todos los clanes llenos", value="ninguno", default=True))
-        
-        super().__init__(
-            placeholder="👪 Selecciona el clan de tu OC",
-            min_values=1,
-            max_values=1,
-            options=opciones
-        )
+        def __init__(self, guild):
+            opciones = []
+            for clan, limite in clanes_limites.items():
+                role = discord.utils.get(guild.roles, name=clan)
+                miembros = len(role.members) if role else 0
+                if miembros < limite:
+                    opciones.append(discord.SelectOption(label=clan))
 
-    async def callback(self, interaction: discord.Interaction):
-    if interaction.user != user:
-        await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
-        return
+            if not opciones:
+                opciones.append(discord.SelectOption(label="❌ Todos los clanes llenos", value="ninguno", default=True))
 
-    # Revisar si el clan está lleno
-    role = discord.utils.get(interaction.guild.roles, name=self.values[0])
-    if role and len(role.members) >= clanes_limites[self.values[0]]:
-        await interaction.response.send_message(f"❌ El clan **{self.values[0]}** está lleno. Elige otro.", ephemeral=True)
-        return
+            super().__init__(
+                placeholder="👪 Selecciona el clan de tu OC",
+                min_values=1,
+                max_values=1,
+                options=opciones
+            )
 
-    respuestas["clan"] = self.values[0]
-    await interaction.response.send_message(f"✅ Clan seleccionado: **{self.values[0]}**", ephemeral=True)
-    self.view.stop()
+        async def callback(self, interaction: discord.Interaction):
+            if interaction.user != user:
+                await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+                return
+
+            role = discord.utils.get(interaction.guild.roles, name=self.values[0])
+            if role and len(role.members) >= clanes_limites.get(self.values[0], 0):
+                await interaction.response.send_message(f"❌ El clan **{self.values[0]}** está lleno. Elige otro.", ephemeral=True)
+                return
+
+            respuestas["clan"] = self.values[0]
+            await interaction.response.send_message(f"✅ Clan seleccionado: **{self.values[0]}**", ephemeral=True)
+            self.view.stop()
 
     class ClanView(discord.ui.View):
         def __init__(self):
             super().__init__(timeout=90)
-            self.add_item(ClanSelect())
+            self.add_item(ClanSelect(ctx.guild))
 
     view_clan = ClanView()
     await ctx.send("🌀 **Selecciona el clan de tu OC**", view=view_clan)
@@ -289,30 +286,28 @@ async def plantilla(ctx):
 
     # ---------- MENÚ DE ALDEA ----------
     class AldeaSelect(discord.ui.Select):
-    def __init__(self):
-        opciones = []
-        for a in aldeas_list:
-            role = discord.utils.get(ctx.guild.roles, name=a)
-            # Solo agregar la aldea si no está llena
-            if not role or len(role.members) < LIMITE_ALDEAS:
-                opciones.append(discord.SelectOption(label=a))
+        def __init__(self):
+            opciones = []
+            for a in aldeas_list:
+                role = discord.utils.get(ctx.guild.roles, name=a)
+                if not role or len(role.members) < LIMITE_ALDEAS:
+                    opciones.append(discord.SelectOption(label=a))
 
-        super().__init__(
-            placeholder="🏙️ Selecciona la aldea de tu OC",
-            min_values=1,
-            max_values=1,
-            options=opciones
-        )
+            super().__init__(
+                placeholder="🏙️ Selecciona la aldea de tu OC",
+                min_values=1,
+                max_values=1,
+                options=opciones
+            )
 
-    async def callback(self, interaction: discord.Interaction):
-        if interaction.user != user:
-            await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
-            return
+        async def callback(self, interaction: discord.Interaction):
+            if interaction.user != user:
+                await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+                return
 
-        respuestas["aldea"] = self.values[0]
-        await interaction.response.send_message(f"✅ Aldea seleccionada: **{self.values[0]}**", ephemeral=True)
-        self.view.stop()
-
+            respuestas["aldea"] = self.values[0]
+            await interaction.response.send_message(f"✅ Aldea seleccionada: **{self.values[0]}**", ephemeral=True)
+            self.view.stop()
 
     class AldeaView(discord.ui.View):
         def __init__(self):
@@ -422,7 +417,9 @@ async def plantilla(ctx):
     await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
 
 
+
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
