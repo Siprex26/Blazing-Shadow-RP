@@ -236,7 +236,6 @@ async def lives(ctx):
 async def plantilla(ctx):
     user = ctx.author
     canal_destino_id = 1415360688599203870  # Canal fijo #fichas-oc
-
     respuestas = {}
 
     # ---------- MENÚ DE CLAN ----------
@@ -263,9 +262,9 @@ async def plantilla(ctx):
             super().__init__(timeout=90)
             self.add_item(ClanSelect())
 
-    await ctx.send("🌀 **Selecciona el clan de tu OC**", view=ClanView())
-    view = ClanView()
-    await view.wait()
+    view_clan = ClanView()
+    await ctx.send("🌀 **Selecciona el clan de tu OC**", view=view_clan)
+    await view_clan.wait()
     if "clan" not in respuestas:
         await ctx.send("❌ Debes seleccionar un clan. Plantilla cancelada.")
         return
@@ -294,9 +293,9 @@ async def plantilla(ctx):
             super().__init__(timeout=90)
             self.add_item(AldeaSelect())
 
-    await ctx.send("🏙️ **Selecciona la aldea de tu OC**", view=AldeaView())
-    view = AldeaView()
-    await view.wait()
+    view_aldea = AldeaView()
+    await ctx.send("🏙️ **Selecciona la aldea de tu OC**", view=view_aldea)
+    await view_aldea.wait()
     if "aldea" not in respuestas:
         await ctx.send("❌ Debes seleccionar una aldea. Plantilla cancelada.")
         return
@@ -319,9 +318,84 @@ async def plantilla(ctx):
             )
 
         async def callback(self, interaction: discord.Interaction):
-            if interaction
+            if interaction.user != user:
+                await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+                return
+            respuestas["elementos"] = ", ".join(self.values)
+            await interaction.response.send_message(f"✅ Elementos seleccionados: **{respuestas['elementos']}**", ephemeral=True)
+            self.view.stop()
 
+    class ElementoView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=90)
+            self.add_item(ElementoSelect())
+
+    view_elemento = ElementoView()
+    await ctx.send("🌪️ **Selecciona los elementos de tu OC**", view=view_elemento)
+    await view_elemento.wait()
+    if "elementos" not in respuestas:
+        await ctx.send("❌ Debes seleccionar al menos un elemento. Plantilla cancelada.")
+        return
+
+    # ---------- PREGUNTAS DE TEXTO ----------
+    preguntas_texto = [
+        ("✍️ **Nombre del OC?**", "nombre"),
+        ("🎯 **Aspiración del OC?**", "aspiracion"),
+        ("👤 **Tu nombre en Roblox?**", "roblox"),
+    ]
+
+    def check_msg(m):
+        return m.author == user and m.channel == ctx.channel
+
+    for pregunta, key in preguntas_texto:
+        await ctx.send(pregunta)
+        msg = await bot.wait_for("message", check=check_msg, timeout=90)
+        respuestas[key] = msg.content
+
+    # ---------- FECHA AUTOMÁTICA ----------
+    respuestas["fecha"] = datetime.now().strftime("%d/%m/%Y")
+
+    # ---------- PREGUNTA DE IMAGEN ----------
+    await ctx.send("🖼️ **Manda una foto de tu OC (obligatoria)**")
+
+    def check_img(m):
+        return (
+            m.author == user
+            and m.channel == ctx.channel
+            and (m.attachments or m.content.startswith("http"))
+        )
+
+    imagen_msg = await bot.wait_for("message", check=check_img, timeout=90)
+    if not imagen_msg.attachments and not imagen_msg.content.startswith("http"):
+        await ctx.send("❌ Debes mandar una imagen o un link de imagen válido. Plantilla cancelada.")
+        return
+
+    imagen_url = imagen_msg.attachments[0].url if imagen_msg.attachments else imagen_msg.content
+
+    # ---------- ENVIAR FICHA ----------
+    canal_destino = bot.get_channel(canal_destino_id)
+    if not canal_destino:
+        await ctx.send("⚠️ No encontré el canal destino, revisa el ID.")
+        return
+
+    ficha_texto = (
+        "╔════════════════════════════╗\n"
+        "       🌸 FICHA DE OC - ROLEPLAY 🌸\n"
+        "╚════════════════════════════╝\n\n"
+        f"🎴 **Nombre del OC:** {respuestas['nombre']}\n\n"
+        f"👪 **Clan:** {respuestas['clan']}\n\n"
+        f"🏙️ **Aldea:** {respuestas['aldea']}\n\n"
+        f"🌪️ **Elemento(s):** {respuestas['elementos']}\n\n"
+        f"🎯 **Aspiración:** {respuestas['aspiracion']}\n\n"
+        f"👤 **Nombre en Roblox:** {respuestas['roblox']}\n\n"
+        f"📅 **Fecha de creación:** {respuestas['fecha']}\n\n"
+        f"🖼️ **Foto del OC:**\n{imagen_url}"
+    )
+
+    await canal_destino.send(f"✅ Nueva ficha enviada por {user.mention}\n\n{ficha_texto}")
+    await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
 
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
