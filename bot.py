@@ -235,94 +235,93 @@ async def lives(ctx):
 @bot.command()
 async def plantilla(ctx):
     user = ctx.author
-    canal_destino_id = 1415360688599203870 # 🔹 Cambia por el ID real de #fichas-oc
+    canal_destino_id = 1415360688599203870  # Canal fijo #fichas-oc
 
-    def check(m):
-        return m.author == user and m.channel == ctx.channel
+    respuestas = {}
 
-    try:
-        # Preguntas paso a paso
-        preguntas = [
-            ("✍️ **Nombre del OC?**", "nombre"),
-            ("🌀 **Clan del OC?**", "clan"),
-            ("🏙️ **Aldea del OC?**", "aldea"),
-            ("🌪️ **Elemento(s) del OC?**", "elementos"),
-            ("🎯 **Aspiración del OC?**", "aspiracion"),
-            ("👤 **Tu nombre en Roblox?**", "roblox"),
-            ("📅 **Fecha de creación del OC?**", "fecha"),
-        ]
-
-        respuestas = {}
-
-        for pregunta, key in preguntas:
-            embed = discord.Embed(
-                title="📋 Plantilla de OC",
-                description=pregunta,
-                color=discord.Color.blurple()
-            )
-            await ctx.send(embed=embed)
-            msg = await bot.wait_for("message", check=check, timeout=90)
-            respuestas[key] = msg.content
-
-        # Pregunta de imagen obligatoria
-        embed_img = discord.Embed(
-            title="📋 Plantilla de OC",
-            description="🖼️ **Manda una foto de tu OC (obligatoria)**",
-            color=discord.Color.blurple()
-        )
-        await ctx.send(embed=embed_img)
-
-        def check_img(m):
-            return (
-                m.author == user
-                and m.channel == ctx.channel
-                and (m.attachments or m.content.startswith("http"))
+    # ---------- MENÚ DE CLAN ----------
+    class ClanSelect(discord.ui.Select):
+        def __init__(self):
+            opciones = [discord.SelectOption(label=c) for c in clanes_limites.keys()]
+            super().__init__(
+                placeholder="👪 Selecciona el clan de tu OC",
+                min_values=1,
+                max_values=1,
+                options=opciones
             )
 
-        imagen_msg = await bot.wait_for("message", check=check_img, timeout=90)
+        async def callback(self, interaction: discord.Interaction):
+            if interaction.user != user:
+                await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+                return
+            respuestas["clan"] = self.values[0]
+            await interaction.response.send_message(f"✅ Clan seleccionado: **{self.values[0]}**", ephemeral=True)
+            self.view.stop()
 
-        if not imagen_msg.attachments and not imagen_msg.content.startswith("http"):
-            await ctx.send("❌ Debes mandar una imagen o un link de imagen válido. Plantilla cancelada.")
-            return
+    class ClanView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=90)
+            self.add_item(ClanSelect())
 
-        imagen_url = imagen_msg.attachments[0].url if imagen_msg.attachments else imagen_msg.content
+    await ctx.send("🌀 **Selecciona el clan de tu OC**", view=ClanView())
+    view = ClanView()
+    await view.wait()
+    if "clan" not in respuestas:
+        await ctx.send("❌ Debes seleccionar un clan. Plantilla cancelada.")
+        return
 
-        # Canal destino
-        canal_destino = bot.get_channel(canal_destino_id)
-        if not canal_destino:
-            await ctx.send("⚠️ No encontré el canal destino, revisa el ID.")
-            return
+    # ---------- MENÚ DE ALDEA ----------
+    class AldeaSelect(discord.ui.Select):
+        def __init__(self):
+            opciones = [discord.SelectOption(label=a) for a in aldeas_list]
+            super().__init__(
+                placeholder="🏙️ Selecciona la aldea de tu OC",
+                min_values=1,
+                max_values=1,
+                options=opciones
+            )
 
-        # Texto con el formato que pediste
-        ficha_texto = (
-            "╔════════════════════════════╗\n"
-            "       🌸 FICHA DE OC - ROLEPLAY 🌸\n"
-            "╚════════════════════════════╝\n\n"
-            f"🎴 **Nombre del OC:** {respuestas['nombre']}\n\n"
-            f"👪 **Clan:** {respuestas['clan']}\n\n"
-            f"🏙️ **Aldea:** {respuestas['aldea']}\n\n"
-            f"🌪️ **Elemento(s):** {respuestas['elementos']}\n\n"
-            f"🎯 **Aspiración:** {respuestas['aspiracion']}\n\n"
-            f"👤 **Nombre en Roblox:** {respuestas['roblox']}\n\n"
-            f"📅 **Fecha de creación:** {respuestas['fecha']}\n\n"
-            f"🖼️ **Foto del OC:**\n{imagen_url}"
-        )
+        async def callback(self, interaction: discord.Interaction):
+            if interaction.user != user:
+                await interaction.response.send_message("❌ No puedes responder esta plantilla.", ephemeral=True)
+                return
+            respuestas["aldea"] = self.values[0]
+            await interaction.response.send_message(f"✅ Aldea seleccionada: **{self.values[0]}**", ephemeral=True)
+            self.view.stop()
 
-        # Mandar ficha al canal fichas-oc
-        await canal_destino.send(f"✅ Nueva ficha enviada por {user.mention}\n\n{ficha_texto}")
+    class AldeaView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=90)
+            self.add_item(AldeaSelect())
 
-        # Confirmación en el canal original
-        await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
+    await ctx.send("🏙️ **Selecciona la aldea de tu OC**", view=AldeaView())
+    view = AldeaView()
+    await view.wait()
+    if "aldea" not in respuestas:
+        await ctx.send("❌ Debes seleccionar una aldea. Plantilla cancelada.")
+        return
 
-    except TimeoutError:
-        await ctx.send(f"⏳ {user.mention}, tardaste demasiado en responder.")
+    # ---------- MENÚ DE ELEMENTOS ----------
+    class ElementoSelect(discord.ui.Select):
+        def __init__(self):
+            opciones = [
+                discord.SelectOption(label="🔥 Fuego"),
+                discord.SelectOption(label="⚡ Electricidad"),
+                discord.SelectOption(label="🌍 Tierra"),
+                discord.SelectOption(label="💧 Agua"),
+                discord.SelectOption(label="🌪️ Aire"),
+            ]
+            super().__init__(
+                placeholder="🌪️ Selecciona los elementos de tu OC",
+                min_values=1,
+                max_values=5,
+                options=opciones
+            )
+
+        async def callback(self, interaction: discord.Interaction):
+            if interaction
 
 
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
-
-
-
-
-
