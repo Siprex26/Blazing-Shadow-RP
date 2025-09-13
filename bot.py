@@ -425,9 +425,34 @@ async def plantilla(ctx):
     await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
 
 
+@bot.command()
+async def ruleta(ctx):
+    # Generamos un número aleatorio del 1 al 100
+    numero = random.randint(1, 100)
+
+    resultado = "Nada"
+    if numero == 1:  # 1/100 Ashura
+        resultado = "🔥 Ashura"
+    elif numero == 2:  # 1/100 Indra
+        resultado = "⚡ Indra"
+    elif numero <= 4:  # 1/50 (2 en 100 = 2%) Células
+        resultado = "🧬 Células"
+    # Si no cae en ninguno, se queda en "Nada"
+
+    # Creamos el embed
+    embed = discord.Embed(
+        title="🎰 Ruleta Ninja",
+        description=f"Resultado: **{resultado}**",
+        color=discord.Color.random()
+    )
+    embed.set_footer(text=f"Pedido por {ctx.author.display_name}")
+
+    await ctx.send(embed=embed)
+    
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
