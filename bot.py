@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import actividad
 import json
 import random
+import request
 
 
 # ----- CONFIGURACIÓN DE INTENTS -----
@@ -424,33 +425,56 @@ async def plantilla(ctx):
     await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
 
 
+import discord
+from discord.ext import commands
+import random
+import requests
+
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+# Configuración
+API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiIxNDE2NjU2NTMyNzk1NDI4MTE5IiwiaWF0IjoxNzU3ODI3NjM3fQ.sNghL7XGFEOR8ypraNRRFGbTbV7JKsQy9Wv2-vuYcos"   # 👈 pon aquí tu API Key
+GUILD_ID = "1408955335607062541"
+
+def quitar_dinero(user_id, cantidad):
+    url = f"https://unbelievaboat.com/api/v1/guilds/{GUILD_ID}/users/{user_id}"
+    headers = {"Authorization": API_KEY, "Content-Type": "application/json"}
+    data = {"cash": -cantidad}  # negativo = resta
+    r = requests.patch(url, headers=headers, json=data)
+    return r.json()
+
 @bot.command()
 async def ruleta(ctx):
-    # Generamos un número aleatorio del 1 al 100
-    numero = random.randint(1, 100)
+    user_id = str(ctx.author.id)
 
-    resultado = "Nada"
-    if numero == 1:  # 1/100 Ashura
-        resultado = "🔥 Ashura"
-    elif numero == 2:  # 1/100 Indra
-        resultado = "⚡ Indra"
-    elif numero <= 4:  # 1/50 (2 en 100 = 2%) Células
-        resultado = "🧬 Células"
-    # Si no cae en ninguno, se queda en "Nada"
+    # Intentamos cobrar 100,000
+    resultado_api = quitar_dinero(user_id, 100000)
 
-    # Creamos el embed
-    embed = discord.Embed(
-        title="🎰 Ruleta Ninja",
-        description=f"Resultado: **{resultado}**",
-        color=discord.Color.random()
-    )
-    embed.set_footer(text=f"Pedido por {ctx.author.display_name}")
+    # Si la API devuelve cash significa que la operación fue válida
+    if "cash" in resultado_api:
+        numero = random.randint(1, 100)
+        resultado = "Nada"
+        if numero == 1:
+            resultado = "🔥 Ashura"
+        elif numero == 2:
+            resultado = "⚡ Indra"
+        elif numero <= 4:
+            resultado = "🧬 Células"
 
-    await ctx.send(embed=embed)
+        embed = discord.Embed(
+            title="🎰 Ruleta Ninja",
+            description=f"Resultado: **{resultado}**",
+            color=discord.Color.random()
+        )
+        embed.set_footer(text=f"Pedido por {ctx.author.display_name}")
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("❌ No tienes suficiente dinero para girar la ruleta (100,000).")
     
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
