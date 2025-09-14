@@ -4,6 +4,8 @@ import os
 from datetime import datetime, timedelta
 import actividad
 import json
+import random
+
 
 # ----- CONFIGURACIÓN DE INTENTS -----
 intents = discord.Intents.default()
@@ -452,6 +454,7 @@ async def ruleta(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
