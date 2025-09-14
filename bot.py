@@ -160,9 +160,6 @@ async def cmds(ctx):
         "!clanes",
         "!inactivos",
         "!cmds",
-        "!create-live nombre:X fecha:dd/mm/aa confirmado:si/no/probable (Admin)",
-        "!start-live nombre:X (Admin)",
-        "!lives"
     ]
     mensaje += "\n".join(cmds_list)
     await ctx.send(mensaje)
@@ -454,6 +451,7 @@ async def ruleta(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
