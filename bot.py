@@ -439,7 +439,11 @@ GUILD_ID = "1408955335607062541"
 def quitar_dinero(user_id, cantidad):
     url = f"https://unbelievaboat.com/api/v1/guilds/{GUILD_ID}/users/{user_id}"
     headers = {"Authorization": API_KEY, "Content-Type": "application/json"}
-    data = {"cash": -cantidad}  # negativo = resta
+    data = {
+        "cash": {
+            "relative": -cantidad   # 👈 resta al balance actual
+        }
+    }
     r = requests.patch(url, headers=headers, json=data)
     return r.json()
 
@@ -474,6 +478,7 @@ async def ruleta(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
