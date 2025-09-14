@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import actividad
 import json
 import random
-import request
+import requests
 
 
 # ----- CONFIGURACIÓN DE INTENTS -----
@@ -474,6 +474,7 @@ async def ruleta(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
