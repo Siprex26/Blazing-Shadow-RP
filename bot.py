@@ -426,12 +426,6 @@ async def plantilla(ctx):
     await ctx.send("📨 Tu ficha fue enviada correctamente a **#fichas-oc** ✅")
 
 
-import discord
-from discord.ext import commands
-import random
-import requests
-
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 # Configuración
 API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiIxNDE2NjU2NTMyNzk1NDI4MTE5IiwiaWF0IjoxNzU3ODI3NjM3fQ.sNghL7XGFEOR8ypraNRRFGbTbV7JKsQy9Wv2-vuYcos"   # 👈 pon aquí tu API Key
@@ -475,6 +469,7 @@ async def ruleta(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
