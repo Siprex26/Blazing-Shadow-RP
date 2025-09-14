@@ -154,13 +154,14 @@ async def clanes(ctx):
     await ctx.send(mensaje)
 
 @bot.command()
-async def cmds(ctx):
+async def helpcmd(ctx):
     mensaje = "**📜 Comandos Disponibles:**\n"
     cmds_list = [
         "!aldeas",
         "!clanes",
         "!inactivos",
         "!cmds",
+        "!ruleta",
     ]
     mensaje += "\n".join(cmds_list)
     await ctx.send(mensaje)
@@ -474,6 +475,7 @@ async def ruleta(ctx):
 
 # ----- INICIAR BOT -----
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
